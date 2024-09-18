@@ -4,9 +4,11 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
-from modelos.casa import Casa, Quadro
+from modelos.base_e_eixos import BaseEixo
 
-path_imagens = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'imagens')
+base_eixo = BaseEixo(4, 50)
+
+#path_imagens = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'imagens')
 
 angle_light = 0.0
 
@@ -15,38 +17,46 @@ SWITCH = False
 WIDTH, HEIGHT = 800, 600
 
 LIGHT_POS_X = 0.0
-LIGHT_POS_Y = 0.0
+LIGHT_POS_Y = 1.5
 LIGHT_POS_Z = 0.0
 
-CAM_POS_X = 3.0
-CAM_POS_Y = 3.0
-CAM_POS_Z = 3.0
+CAM_POS_X = 1.0
+CAM_POS_Y = 2.5
+CAM_POS_Z = 1.0
 
 LOOK_AT_X = 0.0
-LOOK_AT_Y = 3.0
+LOOK_AT_Y = 0.0
 LOOK_AT_Z = 0.0
 
-casa = Casa(10, 10, 10)
-#quadro_vasco = Quadro(os.path.join(path_imagens, 'vasco.png'), -9.9, 5.0, 0.0)
+LUZ_AMBIENTE = (0.02, 0.02, 0.02, 1.0)
+LUZ_DIFUSA = (0.6, 0.6, 0.6, 1.0)
+LUZ_ESPECULAR = (1.0, 1.0, 1.0, 1.0)
+ATENUACAO_CONSTANTE = 1.0
+ATENUACAO_LINEAR = 1.0
+ATENUACAO_QUADRATICA = 0.1
+SHININESS = 64
+
 
 def init_light():
     glEnable(GL_DEPTH_TEST)
     #
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
+    #
     glEnable(GL_COLOR_MATERIAL)
-    glClearColor(0.0, 0.0, 0.0, 1.0)
+    #
     
-    ambient_light_global = (0.05, 0.05, 0.05, 1.0)  # Intensidade e cor da luz ambiente global
-    #glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient_light_global)
-    glLight(GL_LIGHT0, GL_AMBIENT, ambient_light_global)
-    #glLight(GL_LIGHT0, GL_POSITION, (1.0, 1.0, 1.0, 0.0))
-    glLight(GL_LIGHT0, GL_DIFFUSE, (0.6, 0.6, 0.6, 1.0))
-    glLight(GL_LIGHT0, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, LUZ_AMBIENTE)
+    glLight(GL_LIGHT0, GL_DIFFUSE, LUZ_DIFUSA)
+    glLight(GL_LIGHT0, GL_SPECULAR, LUZ_ESPECULAR)
+    
+    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, ATENUACAO_CONSTANTE)
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, ATENUACAO_LINEAR)
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, ATENUACAO_QUADRATICA)
 
-    glMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE, (0.6, 0.6, 0.6, 1.0))
-    glMaterial(GL_FRONT_AND_BACK, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
-    glMaterial(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+    glMaterial(GL_FRONT, GL_DIFFUSE, LUZ_DIFUSA)
+    glMaterial(GL_FRONT, GL_SPECULAR, LUZ_ESPECULAR)
+    glMaterial(GL_FRONT, GL_SHININESS, SHININESS)    
 
 def idle():
     glutPostRedisplay()
@@ -59,22 +69,25 @@ def display():
     cam()
 
     if SWITCH:
-        init_light()
+        glEnable(GL_LIGHT0)
+        light_pos = (LIGHT_POS_X, LIGHT_POS_Y, LIGHT_POS_Z, 1.0)
+        glLight(GL_LIGHT0, GL_POSITION, light_pos)
 
         glPushMatrix()
         glTranslatef(LIGHT_POS_X, LIGHT_POS_Y, LIGHT_POS_Z)
-        glutWireSphere(0.5, 10, 10)
-        light_pos = (LIGHT_POS_X, LIGHT_POS_Y, LIGHT_POS_Z, 1.0)
-        glLight(GL_LIGHT0, GL_POSITION, light_pos)
+        glRotated(180, 0, 1, 1)
+        glColor3f(1.0, 1.0, 0.0)
+        glutSolidCone(0.3, 1.0, 100, 100)
         glPopMatrix()
     else:
-        glDisable(GL_LIGHTING)
         glDisable(GL_LIGHT0)
     
-    #casa.draw()
-    casa.draw_eixos()
-    #quadro_vasco.draw_quadro_na_parede()
-    glutSolidCube(10)
+
+    base_eixo.draw_base()
+    base_eixo.draw_eixos()
+
+    # draw objetos abaixo !
+    base_eixo.draw_objetos_plano()
 
     glutSwapBuffers()
 
@@ -147,6 +160,8 @@ def main(windowName):
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutCreateWindow(windowName)
     
+    print("Renderer:", glGetString(GL_RENDERER))
+    print("OpenGL version supported:", glGetString(GL_VERSION))
 
     glutDisplayFunc(display)
     glutKeyboardFunc(key)
@@ -157,8 +172,9 @@ def main(windowName):
 
     #habilitando algumas coisas
     glEnable(GL_DEPTH_TEST)
+    init_light()
 
     glutMainLoop()
 
 if __name__ == "__main__":
-    main('Alan')
+    main('Trabalho AV1N2')
